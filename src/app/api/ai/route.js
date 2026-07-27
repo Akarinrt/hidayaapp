@@ -23,11 +23,11 @@ export async function POST(request) {
 
     // 1. Gọi DeepSeek AI để sinh bài viết và keyword ảnh
     const systemPrompt = `Bạn là một chuyên gia sáng tạo nội dung mạng xã hội cho công ty du lịch HIDAYA Travel. 
-    Yêu cầu:
+    Yêu cầu BẮT BUỘC:
     - Giọng văn: ${tonePrompt}.
     - Ngôn ngữ: ${languagePrompt}
     - Format: Bắt đầu bằng 1 tiêu đề hấp dẫn, nội dung chia đoạn dễ đọc, kết thúc bằng hashtag liên quan đến du lịch.
-    - Lưu ý: Không dùng quá nhiều icon. KHÔNG cần giải thích, chỉ trả về nội dung bài viết.
+    - TUYỆT ĐỐI tuân thủ yêu cầu về Ngôn ngữ đã cho ở trên. KHÔNG cần giải thích, chỉ trả về nội dung bài viết.
     - Cuối cùng, ở dòng dưới cùng, hãy viết định dạng [KEYWORD: <từ khóa tiếng anh ngắn gọn nhất miêu tả bài viết để tìm ảnh>]`;
 
     const aiRes = await fetch("https://api.deepseek.com/chat/completions", {

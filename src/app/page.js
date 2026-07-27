@@ -33,7 +33,8 @@ const t = {
     toneProfessional: "Chuyên nghiệp",
     toneHumorous: "Hài hước",
     toneSale: "Bán hàng",
-    bilingual: "Viết song ngữ (Việt - Anh)"
+    bilingual: "Viết song ngữ (Việt - Anh)",
+    sending: "Đang gửi..."
   },
   en: {
     appName: "HIDAYA Travel Manager",
@@ -63,7 +64,8 @@ const t = {
     toneProfessional: "Professional",
     toneHumorous: "Humorous",
     toneSale: "Sales/Promo",
-    bilingual: "Bilingual (EN-VI)"
+    bilingual: "Bilingual (EN-VI)",
+    sending: "Sending..."
   }
 };
 
@@ -159,7 +161,7 @@ export default function Dashboard() {
       return;
     }
 
-    setStatus({ type: 'loading', message: 'Đang gửi...' });
+    setStatus({ type: 'loading', message: t[lang].sending });
 
     try {
       const formData = new FormData();
