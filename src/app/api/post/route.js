@@ -24,8 +24,6 @@ export async function POST(request) {
     }
 
     // Gọi Graph API của Facebook (Dùng me/feed thay vì truyền ID cứng để tránh lỗi sai ID)
-    let fbResponse;
-    let fbData;
 
     // Phân loại: là Video hay là Ảnh
     let fbEndpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`;
