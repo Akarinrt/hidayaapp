@@ -28,7 +28,12 @@ const t = {
     editPage: "Chỉnh sửa Trang",
     loadingPageInfo: "Đang tải thông tin Fanpage...",
     mediaOnly: "[Chỉ có Hình ảnh/Video]",
-    loadingPosts: "Đang tải dữ liệu bài viết..."
+    loadingPosts: "Đang tải dữ liệu bài viết...",
+    tone: "Giọng văn",
+    toneProfessional: "Chuyên nghiệp",
+    toneHumorous: "Hài hước",
+    toneSale: "Bán hàng",
+    bilingual: "Viết song ngữ (Việt - Anh)"
   },
   en: {
     appName: "HIDAYA Travel Manager",
@@ -53,13 +58,20 @@ const t = {
     editPage: "Edit Page",
     loadingPageInfo: "Loading Fanpage info...",
     mediaOnly: "[Media Only]",
-    loadingPosts: "Loading posts data..."
+    loadingPosts: "Loading posts data...",
+    tone: "Tone",
+    toneProfessional: "Professional",
+    toneHumorous: "Humorous",
+    toneSale: "Sales/Promo",
+    bilingual: "Bilingual (EN-VI)"
   }
 };
 
 export default function Dashboard() {
   const [lang, setLang] = useState('vi');
   const [activeTab, setActiveTab] = useState('compose'); // 'compose' | 'manage'
+  const [tone, setTone] = useState('professional');
+  const [isBilingual, setIsBilingual] = useState(false);
   
   // States cho Soạn bài
   const [content, setContent] = useState('');
@@ -113,8 +125,10 @@ export default function Dashboard() {
     try {
       const res = await fetch('/api/ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: content })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ topic: content, tone, isBilingual }),
       });
       const data = await res.json();
       
@@ -171,10 +185,8 @@ export default function Dashboard() {
       
       {/* NAVBAR (MOBILE RESPONSIVE) */}
       <nav className="bg-white border-b px-4 py-3 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-center justify-between sticky top-0 z-20 shadow-sm gap-3 sm:gap-0">
-        <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-2 rounded-lg text-white">
-            <Globe size={22} />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src="/logo.jpg" alt="Hidaya Logo" className="w-10 h-10 rounded-full border border-gray-200 shadow-sm" />
           <h1 className="text-xl sm:text-2xl font-black text-blue-900 tracking-tight">
             {t[lang].appName}
           </h1>
@@ -226,7 +238,6 @@ export default function Dashboard() {
                 <div>
                   <h4 className="font-bold">Lỗi tải dữ liệu Fanpage:</h4>
                   <p className="text-sm">{pageError}</p>
-                  <p className="text-xs mt-2 opacity-80">Nếu nguyên nhân là "Lỗi API", khả năng cao Token của bạn đã hết hạn, hoặc là User Token chứ không phải Page Token. Nếu là "Chưa cấu hình Token", bạn cần kiểm tra lại file .env.local và Restart server.</p>
                 </div>
               </div>
             )}
@@ -237,13 +248,11 @@ export default function Dashboard() {
                 <div className="h-48 bg-gray-200 animate-pulse"></div>
               ) : pageInfo ? (
                 <div>
-                  {/* Cover Photo */}
                   <div 
                     className="h-48 sm:h-64 bg-gray-300 w-full bg-cover bg-center"
                     style={{ backgroundImage: `url(${pageInfo.cover?.source || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=1200'})` }}
                   ></div>
                   
-                  {/* Avatar & Info */}
                   <div className="px-6 pb-6 relative">
                     <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 -mt-16 sm:-mt-12 mb-4">
                       <img 
@@ -263,11 +272,6 @@ export default function Dashboard() {
                          </button>
                       </div>
                     </div>
-                    {pageInfo.about && (
-                      <div className="mt-4 text-gray-700 bg-gray-50 p-4 rounded-xl border">
-                        <p>{pageInfo.about}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -333,6 +337,34 @@ export default function Dashboard() {
                   </button>
                 </div>
                 
+                {/* SMART AI CONTROLS */}
+                <div className="flex flex-wrap items-center gap-4 border-b pb-4 mb-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-semibold text-gray-700">{t[lang].tone}:</label>
+                    <select 
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      className="border-gray-300 rounded-lg text-sm p-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
+                    >
+                      <option value="professional">{t[lang].toneProfessional}</option>
+                      <option value="humorous">{t[lang].toneHumorous}</option>
+                      <option value="sale">{t[lang].toneSale}</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      id="bilingual"
+                      checked={isBilingual}
+                      onChange={(e) => setIsBilingual(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="bilingual" className="text-sm font-semibold text-gray-700 select-none cursor-pointer">
+                      {t[lang].bilingual}
+                    </label>
+                  </div>
+                </div>
+
                 <textarea 
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
