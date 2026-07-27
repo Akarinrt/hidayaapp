@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Facebook, Instagram, Video, Wand2, Send, Image as ImageIcon, Smile, Hash, AlertCircle, Globe, LayoutDashboard, PenSquare, ThumbsUp, MessageCircle, Clock } from 'lucide-react';
 import { FaFacebook, FaInstagram, FaTiktok } from 'react-icons/fa';
 
@@ -77,8 +77,10 @@ export default function Dashboard() {
   const [content, setContent] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [mediaFile, setMediaFile] = useState(null);
   const [platforms, setPlatforms] = useState({ facebook: true, instagram: false, tiktok: false });
   const [status, setStatus] = useState(null);
+  const fileInputRef = useRef(null);
 
   // States cho Quản lý Fanpage
   const [posts, setPosts] = useState([]);
@@ -134,7 +136,10 @@ export default function Dashboard() {
       
       if (data.success) {
         setContent(data.content);
-        if (data.imageUrl) setImageUrl(data.imageUrl);
+        if (data.imageUrl) {
+          setImageUrl(data.imageUrl);
+          setMediaFile(null); // Ưu tiên ảnh từ AI
+        }
         setStatus({ type: 'success', message: '✨ Xong!' });
       } else {
         setStatus({ type: 'error', message: `❌ Lỗi: ${data.error}` });
@@ -157,10 +162,19 @@ export default function Dashboard() {
     setStatus({ type: 'loading', message: 'Đang gửi...' });
 
     try {
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('platforms', JSON.stringify(platforms));
+      
+      if (mediaFile) {
+        formData.append('file', mediaFile);
+      } else if (imageUrl) {
+        formData.append('imageUrl', imageUrl);
+      }
+
       const response = await fetch('/api/post', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, platforms })
+        body: formData
       });
       const data = await response.json();
       
@@ -168,6 +182,7 @@ export default function Dashboard() {
         setStatus({ type: 'success', message: `✅ ${t[lang].postSuccess}` });
         setContent('');
         setImageUrl('');
+        setMediaFile(null);
       } else {
         setStatus({ type: 'error', message: `❌ Lỗi: ${data.error}` });
       }
@@ -178,6 +193,14 @@ export default function Dashboard() {
 
   const togglePlatform = (platform) => {
     setPlatforms(prev => ({ ...prev, [platform]: !prev[platform] }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setMediaFile(file);
+      setImageUrl(URL.createObjectURL(file)); // Dùng url cục bộ để hiển thị
+    }
   };
 
   return (
@@ -374,18 +397,40 @@ export default function Dashboard() {
 
                 {/* Attachments */}
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                  <button className="flex items-center justify-center gap-2 text-gray-600 hover:text-blue-600 font-semibold px-4 py-2 border rounded-xl hover:bg-blue-50 transition-colors w-full sm:w-auto">
+                  <input 
+                    type="file" 
+                    accept="image/*,video/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                  />
+                  <button 
+                    onClick={() => { fileInputRef.current.accept = 'image/*'; fileInputRef.current.click(); }}
+                    className="flex items-center justify-center gap-2 text-gray-600 hover:text-blue-600 font-semibold px-4 py-2 border rounded-xl hover:bg-blue-50 transition-colors w-full sm:w-auto"
+                  >
                     <ImageIcon size={18} /> {t[lang].addImage}
                   </button>
-                  <button className="flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 font-semibold px-4 py-2 border rounded-xl hover:bg-red-50 transition-colors w-full sm:w-auto">
+                  <button 
+                    onClick={() => { fileInputRef.current.accept = 'video/*'; fileInputRef.current.click(); }}
+                    className="flex items-center justify-center gap-2 text-gray-600 hover:text-red-600 font-semibold px-4 py-2 border rounded-xl hover:bg-red-50 transition-colors w-full sm:w-auto"
+                  >
                     <Video size={18} /> {t[lang].addVideo}
                   </button>
                 </div>
                 
                 {imageUrl && (
                   <div className="relative mt-4 rounded-xl overflow-hidden border bg-gray-100">
-                    <img src={imageUrl} alt="AI Generated" className="w-full h-auto max-h-80 object-contain" />
-                    <button onClick={() => setImageUrl('')} className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-red-600 transition-colors">✕</button>
+                    {mediaFile?.type?.includes('video') ? (
+                      <video src={imageUrl} controls className="w-full h-auto max-h-80 object-contain" />
+                    ) : (
+                      <img src={imageUrl} alt="Media" className="w-full h-auto max-h-80 object-contain" />
+                    )}
+                    <button 
+                      onClick={() => { setImageUrl(''); setMediaFile(null); }} 
+                      className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold hover:bg-red-600 transition-colors"
+                    >
+                      ✕
+                    </button>
                   </div>
                 )}
               </div>

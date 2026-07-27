@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const { content, platforms } = await request.json();
+    const reqData = await request.formData();
+    const content = reqData.get('content');
+    const platforms = JSON.parse(reqData.get('platforms') || '{}');
+    const file = reqData.get('file');
+    const imageUrl = reqData.get('imageUrl');
 
     // Chỉ chạy nếu user có chọn Facebook
     if (!platforms.facebook) {
@@ -20,17 +24,27 @@ export async function POST(request) {
     }
 
     // Gọi Graph API của Facebook (Dùng me/feed thay vì truyền ID cứng để tránh lỗi sai ID)
-    const fbResponse = await fetch(`https://graph.facebook.com/v19.0/me/feed`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: content,
-        access_token: ACCESS_TOKEN,
-      }),
-    });
+    let fbEndpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`;
+    const formData = new FormData();
+    formData.append('message', content);
+    formData.append('access_token', ACCESS_TOKEN);
 
+    if (file && file.size > 0) {
+      // File tải lên từ máy tính
+      formData.append('source', file);
+      fbEndpoint = file.type.includes('video') 
+        ? `https://graph.facebook.com/v19.0/${PAGE_ID}/videos`
+        : `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`;
+    } else if (imageUrl) {
+      // Ảnh URL từ Unsplash
+      formData.append('url', imageUrl);
+      fbEndpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`;
+    }
+
+    const fbResponse = await fetch(fbEndpoint, {
+      method: 'POST',
+      body: formData
+    });
     const data = await fbResponse.json();
 
     if (!fbResponse.ok) {
