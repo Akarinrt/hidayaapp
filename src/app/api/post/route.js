@@ -28,69 +28,36 @@ export async function POST(request) {
     let fbData;
 
     // Phân loại: là Video hay là Ảnh
-    const isVideo = file && file.size > 0 && file.type.includes('video');
+    let fbEndpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`;
+    const formData = new FormData();
+    formData.append('access_token', ACCESS_TOKEN);
 
-    if (isVideo) {
-      // TRƯỜNG HỢP 1: ĐĂNG VIDEO
-      const formData = new FormData();
-      formData.append('description', content); // Video dùng description
-      formData.append('access_token', ACCESS_TOKEN);
+    if (file && file.size > 0) {
+      // File tải lên từ máy tính
       formData.append('source', file);
-
-      fbResponse = await fetch(`https://graph.facebook.com/v19.0/${PAGE_ID}/videos`, {
-        method: 'POST',
-        body: formData
-      });
-      fbData = await fbResponse.json();
-    } else if ((file && file.size > 0) || imageUrl) {
-      // TRƯỜNG HỢP 2: ĐĂNG ẢNH (ÉP TÁCH BÀI BẰNG CÁCH UPLOAD ẨN TRƯỚC)
-      const photoFormData = new FormData();
-      photoFormData.append('access_token', ACCESS_TOKEN);
-      photoFormData.append('published', 'false'); // Không hiển thị trên Timeline ngay
-
-      if (file && file.size > 0) {
-        photoFormData.append('source', file);
+      
+      if (file.type.includes('video')) {
+        fbEndpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/videos`;
+        formData.append('description', content); // Video dùng description
       } else {
-        photoFormData.append('url', imageUrl);
+        fbEndpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`;
+        formData.append('message', content);
       }
-
-      // 2.1 Upload ảnh ẩn
-      const uploadRes = await fetch(`https://graph.facebook.com/v19.0/${PAGE_ID}/photos`, {
-        method: 'POST',
-        body: photoFormData
-      });
-      const uploadData = await uploadRes.json();
-
-      if (!uploadRes.ok) {
-        return NextResponse.json(
-          { success: false, error: uploadData.error?.message || "Lỗi tải ảnh lên Facebook" },
-          { status: uploadRes.status }
-        );
-      }
-
-      // 2.2 Tạo bài viết Feed gắn ID ảnh vừa tải (để ép nó thành bài độc lập)
-      const feedFormData = new FormData();
-      feedFormData.append('access_token', ACCESS_TOKEN);
-      feedFormData.append('message', content);
-      feedFormData.append('attached_media', JSON.stringify([{ media_fbid: uploadData.id }]));
-
-      fbResponse = await fetch(`https://graph.facebook.com/v19.0/${PAGE_ID}/feed`, {
-        method: 'POST',
-        body: feedFormData
-      });
-      fbData = await fbResponse.json();
-    } else {
-      // TRƯỜNG HỢP 3: CHỈ ĐĂNG TEXT
-      const formData = new FormData();
+    } else if (imageUrl) {
+      // Ảnh URL từ Unsplash
+      formData.append('url', imageUrl);
       formData.append('message', content);
-      formData.append('access_token', ACCESS_TOKEN);
-
-      fbResponse = await fetch(`https://graph.facebook.com/v19.0/${PAGE_ID}/feed`, {
-        method: 'POST',
-        body: formData
-      });
-      fbData = await fbResponse.json();
+      fbEndpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`;
+    } else {
+      // Chỉ đăng text
+      formData.append('message', content);
     }
+
+    const fbResponse = await fetch(fbEndpoint, {
+      method: 'POST',
+      body: formData
+    });
+    const fbData = await fbResponse.json();
 
     if (!fbResponse.ok) {
       console.error("Facebook API Error:", fbData);
